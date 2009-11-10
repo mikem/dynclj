@@ -7,9 +7,10 @@
 ; - if no file found, `host <ip>` to check current setting
 
 ;(require 'clojure.contrib.str-utils)
-(import '(java.io BufferedReader InputStreamReader))
-(use 'clojure.contrib.base64)
-(use 'clojure.http.client)
+(ns mmazur.updyn.updyn
+  (:use [clojure.contrib.base64 :only [encode-str]]
+        [clojure.http.client :only [request]])
+  (:import (java.io BufferedReader InputStreamReader)))
 
 (defn cmd [p] (.. Runtime getRuntime (exec (str p))))
 
@@ -49,29 +50,6 @@
 ;(def current-configured-ip (last (clojure.contrib.str-utils/re-split #" " (cmdout (cmd "host bt.selfip.com")))))
 ;(println current-configured-ip)
 ;(println (= current-actual-ip current-configured-ip))
-
-; Tests
-(use '[clojure.test])
-
-(deftest test-update-needed?
-  (testing "IP is the same and last update was less than 28 days ago"
-    (is (= false
-           (update-needed? {:ip "220.255.77.147" :date "2009-11-01 21:04:47 SGT"}
-                           {:ip "220.255.77.147" :date "2009-10-30 04:54:23 SGT"}))))
-  (testing "IP is the same but last update was more than 28 days ago"
-  (is (= true
-         (update-needed? {:ip "220.255.77.147" :date "2009-11-29 21:04:47 SGT"}
-                         {:ip "220.255.77.147" :date "2009-11-01 21:04:23 SGT"}))))
-  (testing "IP is different"
-  (is (= true
-         (update-needed? {:ip "220.255.77.147" :date "2009-11-01 21:04:47 SGT"}
-                         {:ip "220.255.88.158" :date "2009-10-30 04:54:23 SGT"})))))
-
-(defn my-run-tests
-   []
-   (binding [*test-out* *out*] (run-tests)))
-
-(my-run-tests)
 
 (def username "test")
 (def password "test")
