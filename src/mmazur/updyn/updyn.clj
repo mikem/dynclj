@@ -56,7 +56,7 @@
 (def username "test")
 (def password "test")
 (def user-pass-base64-encoded (encode-str (apply str (concat username ":" password))))
-(def update-url "http://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
+(def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
 (def additional-headers {"Authorization" (apply str (concat "Basic " user-pass-base64-encoded))})
 
 ;(def response (request update-url "GET" additional-headers))
