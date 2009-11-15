@@ -1,5 +1,5 @@
-(ns mmazur.updyn.test.updyn
-  (:use [mmazur.updyn.updyn] :reload)
+(ns com.mmazur.dynclj.test.dynclj
+  (:use [com.mmazur.dynclj.dynclj] :reload)
   (:use [clojure.test]))
 
 (deftest test-update-needed?

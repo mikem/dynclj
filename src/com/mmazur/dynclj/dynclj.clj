@@ -7,7 +7,7 @@
 ; - if no file found, `host <ip>` to check current setting
 
 ;(require 'clojure.contrib.str-utils)
-(ns mmazur.updyn.updyn
+(ns com.mmazur.dynclj.dynclj
   (:gen-class)
   (:use [clojure.contrib.base64 :only [encode-str]]
         [clojure.http.client :only [request]])
