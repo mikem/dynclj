@@ -46,17 +46,23 @@
 ;(println (= current-actual-ip current-configured-ip))
 
 (defn current-ip-address-from-dyndns []
-  (let [response (request "http://checkip.dyndns.org/" "GET")
+  (let [response (request "http://checkip.dyndns.org/")
         response-body (first (:body-seq response))]
     (re-find #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" response-body)))
 
 (def sample-cache {:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"})
 
-(def cache-file-name "/tmp/dynclj.cache")
+(def *cache-file-name* "/tmp/dynclj.cache")
 
 ; use read-string to instantiate the data structure
 (with-open [cache-file (writer (file-str cache-file-name))]
   (.write cache-file (str sample-cache "\n")))
+
+(defn write-cache
+  ([cache] write-cache cache *cache-file-name*)
+  ([cache filename]
+   (with-open [cache-file (writer (file-str filename))]
+     (.write cache-file (str cache "\n")))))
 
 (def username "test")
 (def password "test")
