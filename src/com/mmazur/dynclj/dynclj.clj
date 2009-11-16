@@ -62,7 +62,9 @@
   ([cache] write-cache cache *cache-file-name*)
   ([cache filename]
    (with-open [cache-file (writer (file-str filename))]
-     (.write cache-file (str cache "\n")))))
+     (doall
+       (for [cache-item cache]
+         (.write cache-file (str cache-item "\n")))))))
 
 (def username "test")
 (def password "test")

@@ -4,8 +4,13 @@
 
 (def cache-test-filename "/tmp/dynclj-test.cache")
 
-(def cache-with-one-entry {:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"})
+(def cache-with-one-entry [{:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"}])
 (def cache-with-one-entry-string "{:host \"test.dyndns.org\", :ip \"100.99.88.77\", :date \"Mon, 16 Nov 2009 11:22:52 SGT\"}\n")
+
+(def cache-with-two-entries [{:host "test.dyndns.org" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}
+                             {:host "test.dnsalias.net" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}])
+(def cache-with-two-entries-string (str "{:host \"test.dyndns.org\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"
+                                        "{:host \"test.dnsalias.net\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"))
 
 (deftest test-update-needed?
   (testing "IP is the same and last update was less than 28 days ago"
@@ -27,11 +32,22 @@
            (do
              (write-cache cache-with-one-entry cache-test-filename)
              (slurp cache-test-filename)))))
-  (testing
+  (testing "Cache contains one entry, using the global *cache-file-name*"
     (binding [*cache-file-name* cache-test-filename]
       (is (= cache-with-one-entry-string
              (do
                (write-cache cache-with-one-entry)
+               (slurp cache-test-filename))))))
+  (testing "Cache contains two entries"
+    (is (= cache-with-two-entries-string
+           (do
+             (write-cache cache-with-two-entries cache-test-filename)
+             (slurp cache-test-filename)))))
+  (testing "Cache contains two entries, using the global *cache-file-name*"
+    (binding [*cache-file-name* cache-test-filename]
+      (is (= cache-with-two-entries-string
+             (do
+               (write-cache cache-with-two-entries)
                (slurp cache-test-filename)))))))
 
 
