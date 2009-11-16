@@ -10,6 +10,7 @@
 (ns com.mmazur.dynclj.dynclj
   (:gen-class)
   (:use [clojure.contrib.base64 :only [encode-str]]
+        [clojure.contrib.duck-streams :only [file-str writer]]
         [clojure.http.client :only [request]])
   (:import (java.io BufferedReader InputStreamReader)
            (java.util Date Calendar)))
@@ -53,6 +54,13 @@
 ;(def current-configured-ip (last (clojure.contrib.str-utils/re-split #" " (cmdout (cmd "host bt.selfip.com")))))
 ;(println current-configured-ip)
 ;(println (= current-actual-ip current-configured-ip))
+
+(def sample-cache {:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"})
+
+(def cache-file-name "/tmp/dynclj.cache")
+
+(with-open [cache-file (writer (file-str cache-file-name))]
+  (.write cache-file (str sample-cache "\n")))
 
 (def username "test")
 (def password "test")
