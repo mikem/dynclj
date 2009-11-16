@@ -45,7 +45,7 @@
 ;(println current-configured-ip)
 ;(println (= current-actual-ip current-configured-ip))
 
-(defn current-ip-address-from-dyndns []
+(defn get-current-ip-address-from-dyndns []
   (let [response (request "http://checkip.dyndns.org/")
         response-body (first (:body-seq response))]
     (re-find #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" response-body)))

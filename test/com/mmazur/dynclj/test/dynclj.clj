@@ -1,6 +1,7 @@
 (ns com.mmazur.dynclj.test.dynclj
   (:use [com.mmazur.dynclj.dynclj] :reload)
-  (:use [clojure.test]))
+  (:use [clojure.test]
+        [clojure.http.client :only [request]]))
 
 (def cache-test-filename "/tmp/dynclj-test.cache")
 
@@ -11,6 +12,23 @@
                              {:host "test.dnsalias.net" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}])
 (def cache-with-two-entries-string (str "{:host \"test.dyndns.org\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"
                                         "{:host \"test.dnsalias.net\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"))
+
+(defn id [a] a)
+
+(def mock-checkip-result "91.162.234.119")
+(def mock-checkip-response {:body-seq '("<html><head><title>Current IP Check</title></head><body>Current IP Address: 91.162.234.119</body></html>"),
+                            :code 200,
+                            :msg "OK",
+                            :method "GET",
+                            :headers {:content-length '("106"),
+                                      :content-type '("text/html"),
+                                      :connection '("close"),
+                                      :server '("DynDNS-CheckIP/1.0"),
+                                      :cache-control '("no-cache"),
+                                      :pragma '("no-cache")},
+                            :get-header id,
+                            :cookies nil,
+                            :url "http://checkip.dyndns.org/"})
 
 (deftest test-update-needed?
   (testing "IP is the same and last update was less than 28 days ago"
@@ -50,6 +68,12 @@
                (write-cache cache-with-two-entries)
                (slurp cache-test-filename)))))))
 
+
+(deftest test-get-current-ip-address-from-dyndns
+  (testing
+    (binding [request (fn [x] mock-checkip-response)]
+      (is (= mock-checkip-result
+             (get-current-ip-address-from-dyndns))))))
 
 (defn my-run-tests
    []
