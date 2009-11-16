@@ -12,16 +12,7 @@
   (:use [clojure.contrib.base64 :only [encode-str]]
         [clojure.contrib.duck-streams :only [file-str writer]]
         [clojure.http.client :only [request]])
-  (:import (java.io BufferedReader InputStreamReader)
-           (java.util Date Calendar)))
-
-(defn cmd [p] (.. Runtime getRuntime (exec (str p))))
-
-(defn cmdout [o]
-  (let [r (BufferedReader.
-            (InputStreamReader.
-              (.getInputStream o)))]
-    (first (line-seq r))))
+  (:import (java.util Date Calendar)))
 
 ; from http://www.dyndns.com/services/dns/dyndns/readme.html#abuse
 (def days-between-nochg-updates 28)
@@ -37,7 +28,6 @@
 (defn deserialize-date [s]
   (.parse (java.text.SimpleDateFormat. date-format) s))
 
-;(def current-actual-ip (cmdout (cmd "./get_ip_address.sh")))
 ;(def now-status {:ip current-actual-ip :date (serialize-date (now))})
 
 (defn nochg-update-ok? [current last-update]
@@ -55,10 +45,16 @@
 ;(println current-configured-ip)
 ;(println (= current-actual-ip current-configured-ip))
 
+(defn current-ip-address-from-dyndns []
+  (let [response (request "http://checkip.dyndns.org/" "GET")
+        response-body (first (:body-seq response))]
+    (re-find #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" response-body)))
+
 (def sample-cache {:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"})
 
 (def cache-file-name "/tmp/dynclj.cache")
 
+; use read-string to instantiate the data structure
 (with-open [cache-file (writer (file-str cache-file-name))]
   (.write cache-file (str sample-cache "\n")))
 
@@ -69,5 +65,13 @@
 (def additional-headers {"Authorization" (apply str (concat "Basic " user-pass-base64-encoded))})
 
 ;(def response (request update-url "GET" additional-headers))
-;(defn -main [& args] (println "application works" (:body-seq response)))
 ;(:body-seq response)
+;(defn -main [& args] (println "application works" (:body-seq response)))
+
+;(defn -main [& args]
+;  (get-current-ip)
+;  (read-cache)
+;  (determine-whether-to-update)
+;  (perform-update)
+;  (handle-return-code)
+;  (write-cache))
