@@ -48,7 +48,9 @@
 (defn read-cache
   ([] (read-cache *cache-file-name*))
   ([filename]
-    (reduce #(conj %1 (read-string %2)) [] (read-lines filename))))
+   (try
+     (reduce #(conj %1 (read-string %2)) [] (read-lines filename))
+     (catch java.io.FileNotFoundException _ []))))
 
 (def username "test")
 (def password "test")

@@ -97,7 +97,10 @@
       (is (= cache-with-two-entries
              (do
                (spit cache-test-filename cache-with-two-entries-string)
-               (read-cache)))))))
+               (read-cache))))))
+  (testing "Read non-existing cache file"
+    (is (= []
+           (read-cache "/tmp/this-file-does-not-exist")))))
 
 (defn my-run-tests
    []
