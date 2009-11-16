@@ -9,3 +9,4 @@
     (first (line-seq r))))
 
 ;(def current-actual-ip (cmdout (cmd "./get_ip_address.sh")))
+;(def current-configured-ip (last (clojure.contrib.str-utils/re-split #" " (cmdout (cmd "host bt.selfip.com")))))
