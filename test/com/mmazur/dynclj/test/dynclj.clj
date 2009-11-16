@@ -1,6 +1,7 @@
 (ns com.mmazur.dynclj.test.dynclj
   (:use [com.mmazur.dynclj.dynclj] :reload)
   (:use [clojure.test]
+        [clojure.contrib.duck-streams :only [spit]]
         [clojure.http.client :only [request]]))
 
 (def cache-test-filename "/tmp/dynclj-test.cache")
@@ -30,6 +31,12 @@
                             :cookies nil,
                             :url "http://checkip.dyndns.org/"})
 
+(deftest test-get-current-ip-address-from-dyndns
+  (testing
+    (binding [request (fn [x] mock-checkip-response)]
+      (is (= mock-checkip-result
+             (get-current-ip-address-from-dyndns))))))
+
 (deftest test-update-needed?
   (testing "IP is the same and last update was less than 28 days ago"
     (is (= false
@@ -45,35 +52,52 @@
                            {:ip "220.255.88.158" :date "Sat, 30 Oct 2009 04:54:23 SGT"})))))
 
 (deftest test-write-cache
-  (testing "Cache contains one entry"
+  (testing "Write cache containing one entry"
     (is (= cache-with-one-entry-string
            (do
              (write-cache cache-with-one-entry cache-test-filename)
              (slurp cache-test-filename)))))
-  (testing "Cache contains one entry, using the global *cache-file-name*"
+  (testing "Write cache containing one entry, using the global *cache-file-name*"
     (binding [*cache-file-name* cache-test-filename]
       (is (= cache-with-one-entry-string
              (do
                (write-cache cache-with-one-entry)
                (slurp cache-test-filename))))))
-  (testing "Cache contains two entries"
+  (testing "Write cache containing two entries"
     (is (= cache-with-two-entries-string
            (do
              (write-cache cache-with-two-entries cache-test-filename)
              (slurp cache-test-filename)))))
-  (testing "Cache contains two entries, using the global *cache-file-name*"
+  (testing "Write cache containing two entries, using the global *cache-file-name*"
     (binding [*cache-file-name* cache-test-filename]
       (is (= cache-with-two-entries-string
              (do
                (write-cache cache-with-two-entries)
                (slurp cache-test-filename)))))))
 
-
-(deftest test-get-current-ip-address-from-dyndns
-  (testing
-    (binding [request (fn [x] mock-checkip-response)]
-      (is (= mock-checkip-result
-             (get-current-ip-address-from-dyndns))))))
+(deftest test-read-cache
+  (testing "Read cache containing one entry"
+    (is (= cache-with-one-entry
+           (do
+             (spit cache-test-filename cache-with-one-entry-string)
+             (read-cache cache-test-filename)))))
+  (testing "Read cache containing one entry, using the global *cache-file-name*"
+    (binding [*cache-file-name* cache-test-filename]
+      (is (= cache-with-one-entry
+             (do
+               (spit cache-test-filename cache-with-one-entry-string)
+               (read-cache))))))
+  (testing "Read cache containing two entries"
+    (is (= cache-with-two-entries
+           (do
+             (spit cache-test-filename cache-with-two-entries-string)
+             (read-cache cache-test-filename)))))
+  (testing "Read cache containing two entries, using the global *cache-file-name*"
+    (binding [*cache-file-name* cache-test-filename]
+      (is (= cache-with-two-entries
+             (do
+               (spit cache-test-filename cache-with-two-entries-string)
+               (read-cache)))))))
 
 (defn my-run-tests
    []

@@ -1,7 +1,7 @@
 (ns com.mmazur.dynclj.dynclj
   (:gen-class)
   (:use [clojure.contrib.base64 :only [encode-str]]
-        [clojure.contrib.duck-streams :only [file-str writer]]
+        [clojure.contrib.duck-streams :only [file-str writer read-lines]]
         [clojure.http.client :only [request]])
   (:import (java.util Date Calendar)))
 
@@ -37,29 +37,34 @@
         response-body (first (:body-seq response))]
     (re-find #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" response-body)))
 
-; use read-string to instantiate the data structure
 (defn write-cache
-  ([cache] write-cache cache *cache-file-name*)
+  ([cache] (write-cache cache *cache-file-name*))
   ([cache filename]
    (with-open [cache-file (writer (file-str filename))]
      (doall
        (for [cache-item cache]
          (.write cache-file (str cache-item "\n")))))))
 
+(defn read-cache
+  ([] (read-cache *cache-file-name*))
+  ([filename]
+    (reduce #(conj %1 (read-string %2)) [] (read-lines filename))))
+
 (def username "test")
 (def password "test")
-(def user-pass-base64-encoded (encode-str (apply str (concat username ":" password))))
+(def user-pass-base64-encoded (encode-str (apply str username ":" password)))
 (def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
-(def additional-headers {"Authorization" (apply str (concat "Basic " user-pass-base64-encoded))})
+(def additional-headers {"Authorization" (apply str "Basic " user-pass-base64-encoded)})
 
 ;(def response (request update-url "GET" additional-headers))
 ;(:body-seq response)
 ;(defn -main [& args] (println "application works" (:body-seq response)))
 
 ;(defn -main [& args]
-;  (get-current-ip)
-;  (read-cache)
-;  (determine-whether-to-update)
-;  (perform-update)
-;  (handle-return-code)
-;  (write-cache))
+;  [ ] (read-config)
+;  [X] (get-current-ip-address-from-dyndns)
+;  [X] (read-cache)
+;  [ ] (determine-whether-to-update)
+;  [ ] (perform-update)
+;  [ ] (handle-return-code)
+;  [X] (write-cache))
