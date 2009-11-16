@@ -25,7 +25,8 @@
 ; from http://www.dyndns.com/services/dns/dyndns/readme.html#abuse
 (def days-between-nochg-updates 28)
 
-(def date-format "yyyy-MM-dd HH:mm:ss z")
+; Format: Mon, 16 Nov 2009 03:00:26 GMT
+(def date-format "E, d MMM yyyy HH:mm:ss z")
 
 (defn now [] (Date.))
 
