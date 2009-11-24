@@ -14,7 +14,9 @@
 (def cache-with-two-entries-string (str "{:host \"test.dyndns.org\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"
                                         "{:host \"test.dnsalias.net\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"))
 
-(defn id [a] a)
+(def config-test-filename "/tmp/dynclj-test.conf")
+
+(def sample-config-1 "username=test_user\npassword=baloney\nhosts=test.dyndns.org,test.dnsalias.org")
 
 (def mock-checkip-result "91.162.234.119")
 (def mock-checkip-response {:body-seq '("<html><head><title>Current IP Check</title></head><body>Current IP Address: 91.162.234.119</body></html>"),
@@ -27,7 +29,7 @@
                                       :server '("DynDNS-CheckIP/1.0"),
                                       :cache-control '("no-cache"),
                                       :pragma '("no-cache")},
-                            :get-header id,
+                            :get-header identity,
                             :cookies nil,
                             :url "http://checkip.dyndns.org/"})
 
@@ -106,6 +108,12 @@
 (deftest test-read-cache-with-non-existent-filename
   (is (= []
          (read-cache "/tmp/this-file-does-not-exist"))))
+
+(deftest test-read-config-file
+  (is (= {:username "test_user" :password "baloney" :hosts "test.dyndns.org,test.dnsalias.org"}
+         (do
+           (spit config-test-filename sample-config-1)
+           (get-config config-test-filename)))))
 
 (defn my-run-tests
    []

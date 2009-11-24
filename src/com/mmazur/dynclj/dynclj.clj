@@ -62,9 +62,10 @@
 
 (defn get-config [file]
   "Returns a lazy seq of lines found in the config file."
-  (reduce #(assoc %1 (first %2) (second %2)) {} (map #(list (keyword (first %)) (second %))
-       (for [line (remove comment-or-blank? (read-lines file))]
-         (re-split #"=" line)))))
+  (reduce #(assoc %1 (keyword (first %2)) (second %2))
+          {}
+          (for [line (remove comment-or-blank? (read-lines file))]
+            (re-split #"=" line))))
 
 ;;; Perform the update
 (def username "test")
@@ -78,7 +79,8 @@
 ;(defn -main [& args] (println "application works" (:body-seq response)))
 
 ;(defn -main [& args]
-;  [ ] (read-config)
+;  [ ] (determine-config-file-location)
+;  [X] (read-config)
 ;  [X] (get-current-ip-address-from-dyndns)
 ;  [X] (read-cache)
 ;  [ ] (determine-whether-to-update)
