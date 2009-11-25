@@ -13,6 +13,8 @@
                              {:host "test.dnsalias.net" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}])
 (def cache-with-two-entries-string (str "{:host \"test.dyndns.org\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"
                                         "{:host \"test.dnsalias.net\", :ip \"95.209.0.35\", :date \"Wed, 11 Nov 2009 19:12:03 SGT\"}\n"))
+(def cache-with-two-entries-different-times [{:host "test.dyndns.org" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}
+                                             {:host "test.dnsalias.net" :ip "95.209.0.35" :date "Sat, 21 Nov 2009 10:02:31 SGT"}])
 
 (def config-test-filename "/tmp/dynclj-test.conf")
 
@@ -52,6 +54,22 @@
     (is (= true
            (update-needed? {:ip "220.255.77.147" :date "Sun, 01 Nov 2009 21:04:47 SGT"}
                            {:ip "220.255.88.158" :date "Sat, 30 Oct 2009 04:54:23 SGT"})))))
+
+(deftest test-filter-with-update-needed?-no-results
+  (is (= []
+         (filter #(update-needed? {:ip "95.209.0.35" :date "Thu, 12 Nov 2009 04:58:27 SGT"} %) cache-with-two-entries))))
+
+(deftest test-filter-with-update-needed?-one-result
+  (is (= [{:host "test.dyndns.org" :ip "95.209.0.35" :date "Wed, 11 Nov 2009 19:12:03 SGT"}]
+         (filter #(update-needed? {:ip "95.209.0.35" :date "Wed, 9 Dec 2009 19:12:04 SGT"} %) cache-with-two-entries-different-times))))
+
+(deftest test-filter-with-update-needed?-all-results-time-expired
+  (is (= cache-with-two-entries
+         (filter #(update-needed? {:ip "95.209.0.35" :date "Wed, 9 Dec 2009 19:12:04 SGT"} %) cache-with-two-entries))))
+
+(deftest test-filter-with-update-needed?-all-results-ip-changed
+  (is (= cache-with-two-entries
+         (filter #(update-needed? {:ip "109.44.1.8" :date "Wed, 11 Nov 2009 19:15:00 SGT"} %) cache-with-two-entries))))
 
 (deftest test-write-cache-with-one-entry
   (is (= cache-with-one-entry-string

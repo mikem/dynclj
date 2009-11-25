@@ -14,8 +14,6 @@
 ; Format: Mon, 16 Nov 2009 03:00:26 GMT
 (def *date-format* "E, d MMM yyyy HH:mm:ss z")
 
-(defn now [] (Date.))
-
 (defn serialize-date [d]
   (.format (java.text.SimpleDateFormat. *date-format*) d))
 
@@ -55,7 +53,10 @@
      (reduce #(conj %1 (read-string %2)) [] (read-lines filename))
      (catch java.io.FileNotFoundException _ []))))
 
-;;; Read config file
+;;; Config file
+(defn get-config-filename []
+  (str (System/getenv "HOME") "/.dynclj/dynclj.conf"))
+
 (defn comment-or-blank? [line]
   (or (if (re-matches #"^#.*" line) true false)
       (if (re-matches #"^\s*$" line) true false)))
@@ -78,12 +79,18 @@
 ;(:body-seq response)
 ;(defn -main [& args] (println "application works" (:body-seq response)))
 
-;(defn -main [& args]
-;  [ ] (determine-config-file-location)
+;  [X] (determine-config-file-location)
 ;  [X] (read-config)
 ;  [X] (get-current-ip-address-from-dyndns)
 ;  [X] (read-cache)
-;  [ ] (determine-whether-to-update)
+;  [X] (get-list-of-hosts-to-update)
+(defn -main [& args]
+  (let [config-map (get-config (get-config-filename))
+        current-state {:ip (get-current-ip-address-from-dyndns)
+                       :date (serialize-date (Date.))}
+        cache (read-cache)
+        hosts-to-update (filter #(update-needed? current-state %) cache)]
+    ))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
-;  [X] (write-cache))
+;  [X] (write-cache)
