@@ -2,11 +2,11 @@
   (:gen-class)
   (:use [clojure.contrib.base64 :only [encode-str]]
         [clojure.contrib.duck-streams :only [file-str writer read-lines]]
-        [clojure.contrib.str-utils :only [re-split]]
+        [clojure.contrib.str-utils2 :only [split join]]
         [clojure.http.client :only [request]])
   (:import (java.util Date Calendar)))
 
-(def *cache-file-name* "/tmp/dynclj.cache")
+(def *cache-file-name* (str (System/getenv "HOME") "/.dynclj/dynclj.cache"))
 
 ; from http://www.dyndns.com/services/dns/dyndns/readme.html#abuse
 (def *days-between-nochg-updates* 28)
@@ -66,14 +66,21 @@
   (reduce #(assoc %1 (keyword (first %2)) (second %2))
           {}
           (for [line (remove comment-or-blank? (read-lines file))]
-            (re-split #"=" line))))
+            (split line #"="))))
 
 ;;; Perform the update
+(defn perform-update [records current-state config-map]
+  (let [username (:username config-map)
+        password (:password config-map)
+        headers {"Authorization" (str "Basic " (encode-str (str username ":" password)))}
+        hosts (join "," (map #(:host %) records))]
+    (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))))
+
 (def username "test")
 (def password "test")
-(def user-pass-base64-encoded (encode-str (apply str username ":" password)))
+(def user-pass-base64-encoded (encode-str (str username ":" password)))
 (def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
-(def additional-headers {"Authorization" (apply str "Basic " user-pass-base64-encoded)})
+(def additional-headers {"Authorization" (str "Basic " user-pass-base64-encoded)})
 
 ;(def response (request update-url "GET" additional-headers))
 ;(:body-seq response)
@@ -90,7 +97,9 @@
                        :date (serialize-date (Date.))}
         cache (read-cache)
         hosts-to-update (filter #(update-needed? current-state %) cache)]
-    ))
+    (if (> (count hosts-to-update) 0)
+      (println (perform-update hosts-to-update current-state config-map))
+      (println "No update needed"))))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
 ;  [X] (write-cache)
