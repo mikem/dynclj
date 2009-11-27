@@ -62,7 +62,7 @@
       (if (re-matches #"^\s*$" line) true false)))
 
 (defn get-config [file]
-  "Returns a lazy seq of lines found in the config file."
+  "Returns a map of option=value from the config file."
   (reduce #(assoc %1 (keyword (first %2)) (second %2))
           {}
           (for [line (remove comment-or-blank? (read-lines file))]
@@ -99,7 +99,12 @@
         hosts-to-update (filter #(update-needed? current-state %) cache)]
     (if (> (count hosts-to-update) 0)
       (println (perform-update hosts-to-update current-state config-map))
-      (println "No update needed"))))
+      (println "No update needed"))
+    (if (= nil args)
+      (println "args is nil")
+      (do
+        (println (.getClass args))
+        (println args)))))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
 ;  [X] (write-cache)
