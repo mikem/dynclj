@@ -69,6 +69,10 @@
             (split line #"="))))
 
 ;;; Perform the update
+(defn determine-hosts-to-update [config-map current-state] [])
+        ;cache (read-cache)
+        ;hosts-to-update (filter #(update-needed? current-state %) cache)]
+
 (defn perform-update [records current-state config-map]
   (let [username (:username config-map)
         password (:password config-map)
@@ -89,22 +93,17 @@
 ;  [X] (determine-config-file-location)
 ;  [X] (read-config)
 ;  [X] (get-current-ip-address-from-dyndns)
-;  [X] (read-cache)
 ;  [X] (get-list-of-hosts-to-update)
 (defn -main [& args]
   (let [config-map (get-config (get-config-filename))
         current-state {:ip (get-current-ip-address-from-dyndns)
                        :date (serialize-date (Date.))}
-        cache (read-cache)
-        hosts-to-update (filter #(update-needed? current-state %) cache)]
+        hosts-to-update (determine-hosts-to-update config-map current-state)]
+    (println "Config:" config-map)
+    (println "Current state:" current-state)
     (if (> (count hosts-to-update) 0)
       (println (perform-update hosts-to-update current-state config-map))
-      (println "No update needed"))
-    (if (= nil args)
-      (println "args is nil")
-      (do
-        (println (.getClass args))
-        (println args)))))
+      (println "No update needed"))))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
 ;  [X] (write-cache)
