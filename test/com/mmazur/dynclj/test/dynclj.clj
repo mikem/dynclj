@@ -133,8 +133,7 @@
            (spit config-test-filename sample-config-1)
            (get-config config-test-filename)))))
 
-(defn my-run-tests
-   []
-   (binding [*test-out* *out*] (run-tests)))
-
-(my-run-tests)
+;(defn my-run-tests
+;   []
+;   (binding [*test-out* *out*] (run-tests)))
+;(my-run-tests)
