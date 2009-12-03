@@ -6,6 +6,9 @@
 
 (def cache-test-filename "/tmp/dynclj-test.cache")
 
+(def config-with-one-entry {:hosts "test.dyndns.org", :password "test", :username "test"})
+(def config-with-two-entries {:hosts "test.dyndns.org,test.dnsalias.net", :password "test", :username "test"})
+
 (def cache-with-one-entry [{:host "test.dyndns.org" :ip "100.99.88.77" :date "Mon, 16 Nov 2009 11:22:52 SGT"}])
 (def cache-with-one-entry-string "{:host \"test.dyndns.org\", :ip \"100.99.88.77\", :date \"Mon, 16 Nov 2009 11:22:52 SGT\"}\n")
 
@@ -132,6 +135,22 @@
          (do
            (spit config-test-filename sample-config-1)
            (get-config config-test-filename)))))
+
+(deftest test-determine-hosts-to-update-no-ip-change
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= []
+           (let [config-map config-with-one-entry
+                 current-state {:ip "100.99.88.77" :date "Mon, 16 Nov 2009 12:09:14 SGT"}]
+             (spit cache-test-filename cache-with-one-entry-string)
+             (determine-hosts-to-update config-map current-state))))))
+
+(deftest test-determine-hosts-to-update-one-host-ip-change
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= ["test.dyndns.org"]
+           (let [config-map config-with-one-entry
+                 current-state {:ip "100.99.88.6" :date "Mon, 16 Nov 2009 12:09:14 SGT"}]
+             (spit cache-test-filename cache-with-one-entry-string)
+             (determine-hosts-to-update config-map current-state))))))
 
 ;(defn my-run-tests
 ;   []

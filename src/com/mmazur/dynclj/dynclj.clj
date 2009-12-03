@@ -69,7 +69,13 @@
             (split line #"="))))
 
 ;;; Perform the update
-(defn determine-hosts-to-update [config-map current-state] [])
+(defn determine-hosts-to-update [config-map current-state]
+  (let [configured-hosts (split (config-map :hosts) #",")]
+    (vec (for [host configured-hosts cache-item (read-cache)]
+      (if (and (= host (:host cache-item))
+               (update-needed? current-state cache-item))
+        host)))))
+
         ;cache (read-cache)
         ;hosts-to-update (filter #(update-needed? current-state %) cache)]
 
