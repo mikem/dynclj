@@ -152,6 +152,38 @@
              (spit cache-test-filename cache-with-one-entry-string)
              (determine-hosts-to-update config-map current-state))))))
 
+(deftest test-determine-hosts-to-update-one-host-nochg-time-elapsed
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= ["test.dyndns.org"]
+           (let [config-map config-with-one-entry
+                 current-state {:ip "100.99.88.77" :date "Mon, 14 Dec 2009 11:22:53 SGT"}]
+             (spit cache-test-filename cache-with-one-entry-string)
+             (determine-hosts-to-update config-map current-state))))))
+
+(deftest test-determine-hosts-to-update-two-hosts-ip-change
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= ["test.dyndns.org" "test.dnsalias.net"]
+           (let [config-map config-with-two-entries
+                 current-state {:ip "100.99.88.6" :date "Wed, 11 Nov 2009 20:09:14 SGT"}]
+             (spit cache-test-filename cache-with-two-entries-string)
+             (determine-hosts-to-update config-map current-state))))))
+
+(deftest test-determine-hosts-to-update-one-host-ip-change-extra-host-in-cache
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= ["test.dyndns.org"]
+           (let [config-map config-with-one-entry
+                 current-state {:ip "100.99.88.6" :date "Wed, 11 Nov 2009 20:09:14 SGT"}]
+             (spit cache-test-filename cache-with-two-entries-string)
+             (determine-hosts-to-update config-map current-state))))))
+
+(deftest test-determine-hosts-to-update-two-hosts-ip-change-extra-host-in-config
+  (binding [*cache-file-name* cache-test-filename]
+    (is (= ["test.dyndns.org" "test.dnsalias.net"]
+           (let [config-map config-with-two-entries
+                 current-state {:ip "100.99.88.6" :date "Mon, 16 Nov 2009 11:32:53 SGT"}]
+             (spit cache-test-filename cache-with-one-entry-string)
+             (determine-hosts-to-update config-map current-state))))))
+
 ;(defn my-run-tests
 ;   []
 ;   (binding [*test-out* *out*] (run-tests)))
