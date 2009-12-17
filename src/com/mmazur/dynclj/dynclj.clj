@@ -1,12 +1,13 @@
 (ns com.mmazur.dynclj.dynclj
   (:gen-class)
   (:use [clojure.contrib.base64 :only [encode-str]]
-        [clojure.contrib.duck-streams :only [file-str writer read-lines]]
+        [clojure.contrib.duck-streams :only [file-str writer read-lines append-spit]]
         [clojure.contrib.str-utils2 :only [split join]]
         [clojure.http.client :only [request]])
   (:import (java.util Date Calendar)))
 
 (def *cache-file-name* (str (System/getenv "HOME") "/.dynclj/dynclj.cache"))
+(def *log-file-name* (str (System/getenv "HOME") "/.dynclj/dynclj.log"))
 
 ; from http://www.dyndns.com/services/dns/dyndns/readme.html#abuse
 (def *days-between-nochg-updates* 28)
@@ -19,6 +20,11 @@
 
 (defn deserialize-date [s]
   (.parse (java.text.SimpleDateFormat. *date-format*) s))
+
+(def *now* (serialize-date (Date.)))
+
+(defn log [msg]
+  (append-spit *log-file-name* (str *now* " " msg "\n")))
 
 ;;; DynDNS logic
 (defn nochg-update-ok? [current last-update]
@@ -89,17 +95,28 @@
   (let [username (:username config-map)
         password (:password config-map)
         headers {"Authorization" (str "Basic " (encode-str (str username ":" password)))}
-        hosts (join "," records)]
-    (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))))
+        hosts (join "," records)
+        update-url (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))
+        response (request update-url "GET" headers)
+        update-date (first (:date (:headers response)))
+        new-cache (reduce #(conj %1 (merge {:host %2} current-state)) [] records)]
+    (log (str "Update response code: " (:code response) ", msg: " (:msg response) ", body: " (apply str (:body-seq response))))
+    (log (str "Writing cache: " new-cache))
+    (write-cache new-cache)
+    (:code response)))
 
-(def username "test")
-(def password "test")
-(def user-pass-base64-encoded (encode-str (str username ":" password)))
-(def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
-(def additional-headers {"Authorization" (str "Basic " user-pass-base64-encoded)})
-
+;(def username "test")
+;(def password "test")
+;(def user-pass-base64-encoded (encode-str (str username ":" password)))
+;(def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
+;(def additional-headers {"Authorization" (str "Basic " user-pass-base64-encoded)})
+;
 ;(def response (request update-url "GET" additional-headers))
+;(keys response)
 ;(:body-seq response)
+;(:code response)
+;(first (:date (:headers response)))
+;(println response)
 ;(defn -main [& args] (println "application works" (:body-seq response)))
 
 ;  [X] (determine-config-file-location)
@@ -109,13 +126,12 @@
 (defn -main [& args]
   (let [config-map (get-config (get-config-filename))
         current-state {:ip (get-current-ip-address-from-dyndns)
-                       :date (serialize-date (Date.))}
+                       :date *now*}
         hosts-to-update (determine-hosts-to-update config-map current-state)]
-    (println "Config:" config-map)
-    (println "Current state:" current-state)
     (if (> (count hosts-to-update) 0)
-      (println (perform-update hosts-to-update current-state config-map))
-      (println "No update needed"))))
+      (do (log (str "Updating " (count hosts-to-update) " hosts"))
+        (perform-update hosts-to-update current-state config-map))
+      (log "No update needed"))))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
 ;  [X] (write-cache)
