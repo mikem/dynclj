@@ -130,6 +130,18 @@
   (is (= []
          (read-cache "/tmp/this-file-does-not-exist"))))
 
+(deftest test-get-host-record-from-cache
+  (is (= (first cache-with-one-entry)
+         (get-host-record-from-cache "test.dyndns.org" cache-with-one-entry)))
+  (is (= (first cache-with-two-entries)
+         (get-host-record-from-cache "test.dyndns.org" cache-with-two-entries)))
+  (is (= (second cache-with-two-entries)
+         (get-host-record-from-cache "test.dnsalias.net" cache-with-two-entries))))
+
+(deftest test-get-host-record-from-cache-cache-miss
+  (is (= nil
+         (get-host-record-from-cache "missing.dyndns.org" cache-with-two-entries))))
+
 (deftest test-read-config-file
   (is (= {:username "test_user" :password "baloney" :hosts "test.dyndns.org,test.dnsalias.org"}
          (do

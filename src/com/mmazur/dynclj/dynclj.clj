@@ -53,6 +53,9 @@
      (reduce #(conj %1 (read-string %2)) [] (read-lines filename))
      (catch java.io.FileNotFoundException _ []))))
 
+(defn get-host-record-from-cache [host-name cache]
+  (first (filter #(= host-name (:host %)) cache)))
+
 ;;; Config file
 (defn get-config-filename []
   (str (System/getenv "HOME") "/.dynclj/dynclj.conf"))
@@ -70,11 +73,14 @@
 
 ;;; Perform the update
 (defn determine-hosts-to-update [config-map current-state]
-  (let [configured-hosts (split (config-map :hosts) #",")]
-    (vec (remove nil? (for [host configured-hosts cache-item (read-cache)]
-      (if (and (= host (:host cache-item))
-               (update-needed? current-state cache-item))
-        host))))))
+  (let [configured-hosts (split (config-map :hosts) #",")
+        cache (read-cache)]
+    (vec (remove nil? (for [host configured-hosts]
+                        (let [cache-item (get-host-record-from-cache host cache)]
+                          (if (nil? cache-item)
+                            host
+                            (if (update-needed? current-state cache-item)
+                              host))))))))
 
         ;cache (read-cache)
         ;hosts-to-update (filter #(update-needed? current-state %) cache)]
@@ -83,7 +89,7 @@
   (let [username (:username config-map)
         password (:password config-map)
         headers {"Authorization" (str "Basic " (encode-str (str username ":" password)))}
-        hosts (join "," (map #(:host %) records))]
+        hosts (join "," records)]
     (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))))
 
 (def username "test")
