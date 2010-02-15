@@ -72,10 +72,14 @@
 
 (defn get-config [file]
   "Returns a map of option=value from the config file."
-  (reduce #(assoc %1 (keyword (first %2)) (second %2))
-          {}
-          (for [line (remove comment-or-blank? (read-lines file))]
-            (split line #"="))))
+  (try
+    (reduce #(assoc %1 (keyword (first %2)) (second %2))
+            {}
+            (for [line (remove comment-or-blank? (read-lines file))]
+              (split line #"=")))
+    (catch java.io.FileNotFoundException _
+      (do (log "ERROR: Config file not found")
+        {}))))
 
 ;;; Perform the update
 (defn determine-hosts-to-update [config-map current-state]
@@ -124,14 +128,16 @@
 ;  [X] (get-current-ip-address-from-dyndns)
 ;  [X] (get-list-of-hosts-to-update)
 (defn -main [& args]
-  (let [config-map (get-config (get-config-filename))
-        current-state {:ip (get-current-ip-address-from-dyndns)
-                       :date *now*}
-        hosts-to-update (determine-hosts-to-update config-map current-state)]
-    (if (> (count hosts-to-update) 0)
-      (do (log (str "Updating " (count hosts-to-update) " hosts"))
-        (perform-update hosts-to-update current-state config-map))
-      (log "No update needed"))))
+  (let [config-map (get-config (get-config-filename))]
+    (if (not (empty? config-map))
+      (let [current-state {:ip (get-current-ip-address-from-dyndns)
+                           :date *now*}
+            hosts-to-update (determine-hosts-to-update config-map current-state)]
+        (if (> (count hosts-to-update) 0)
+          (do (log (str "Updating " (count hosts-to-update) " hosts"))
+            (perform-update hosts-to-update current-state config-map))
+          (log "No update needed")))
+      (log "No config file"))))
 ;  [ ] (perform-update)
 ;  [ ] (handle-return-code)
 ;  [X] (write-cache)
