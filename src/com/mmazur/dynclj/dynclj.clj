@@ -92,15 +92,13 @@
                             (if (update-needed? current-state cache-item)
                               host))))))))
 
-        ;cache (read-cache)
-        ;hosts-to-update (filter #(update-needed? current-state %) cache)]
-
 (defn perform-update [records current-state config-map]
   (let [username (:username config-map)
         password (:password config-map)
         headers {"Authorization" (str "Basic " (encode-str (str username ":" password)))}
         hosts (join "," records)
         update-url (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))
+        _ (log (str "Update URL: " update-url))
         response (request update-url "GET" headers)
         update-date (first (:date (:headers response)))
         new-cache (reduce #(conj %1 (merge {:host %2} current-state)) [] records)]
@@ -108,6 +106,18 @@
     (log (str "Writing cache: " new-cache))
     (write-cache new-cache)
     (:code response)))
+
+(defn -main [& args]
+  (let [config-map (get-config (get-config-filename))]
+    (if (not-empty config-map)
+      (let [current-state {:ip (get-current-ip-address-from-dyndns)
+                           :date *now*}
+            hosts-to-update (determine-hosts-to-update config-map current-state)]
+        (if (> (count hosts-to-update) 0)
+          (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
+            (perform-update hosts-to-update current-state config-map))
+          (log "No update needed")))
+      (log "No config file"))))
 
 ;(def username "test")
 ;(def password "test")
@@ -121,23 +131,3 @@
 ;(:code response)
 ;(first (:date (:headers response)))
 ;(println response)
-;(defn -main [& args] (println "application works" (:body-seq response)))
-
-;  [X] (determine-config-file-location)
-;  [X] (read-config)
-;  [X] (get-current-ip-address-from-dyndns)
-;  [X] (get-list-of-hosts-to-update)
-(defn -main [& args]
-  (let [config-map (get-config (get-config-filename))]
-    (if (not (empty? config-map))
-      (let [current-state {:ip (get-current-ip-address-from-dyndns)
-                           :date *now*}
-            hosts-to-update (determine-hosts-to-update config-map current-state)]
-        (if (> (count hosts-to-update) 0)
-          (do (log (str "Updating " (count hosts-to-update) " hosts"))
-            (perform-update hosts-to-update current-state config-map))
-          (log "No update needed")))
-      (log "No config file"))))
-;  [ ] (perform-update)
-;  [ ] (handle-return-code)
-;  [X] (write-cache)
