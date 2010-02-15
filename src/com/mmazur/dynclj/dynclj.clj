@@ -26,6 +26,11 @@
 (defn log [msg]
   (append-spit *log-file-name* (str *now* " " msg "\n")))
 
+(defn abort [msg]
+  (log msg)
+  (println msg)
+  (System/exit 1))
+
 ;;; DynDNS logic
 (defn nochg-update-ok? [current last-update]
   (let [cal (Calendar/getInstance)]
@@ -78,8 +83,7 @@
             (for [line (remove comment-or-blank? (read-lines file))]
               (split line #"=")))
     (catch java.io.FileNotFoundException _
-      (do (log "ERROR: Config file not found")
-        {}))))
+      (abort (str "ERROR: Config file " file " not found")))))
 
 ;;; Perform the update
 (defn determine-hosts-to-update [config-map current-state]
@@ -108,16 +112,14 @@
     (:code response)))
 
 (defn -main [& args]
-  (let [config-map (get-config (get-config-filename))]
-    (if (not-empty config-map)
-      (let [current-state {:ip (get-current-ip-address-from-dyndns)
-                           :date *now*}
-            hosts-to-update (determine-hosts-to-update config-map current-state)]
-        (if (> (count hosts-to-update) 0)
-          (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
-            (perform-update hosts-to-update current-state config-map))
-          (log "No update needed")))
-      (log "No config file"))))
+  (let [config-map (get-config (get-config-filename))
+        current-state {:ip (get-current-ip-address-from-dyndns)
+                       :date *now*}
+        hosts-to-update (determine-hosts-to-update config-map current-state)]
+    (if (> (count hosts-to-update) 0)
+      (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
+        (perform-update hosts-to-update current-state config-map))
+      (log "No update needed"))))
 
 ;(def username "test")
 ;(def password "test")
