@@ -109,7 +109,7 @@
         _ (log (str "Update URL: " update-url))
         response (request update-url "GET" headers)
         update-date (first (:date (:headers response)))
-        new-cache (reduce #(conj %1 (merge {:host %2} current-state)) [] records)]
+        new-cache (reduce #(conj %1 (assoc current-state :host %2 :date update-date)) [] records)]
     (log (str "Update response code: " (:code response) ", msg: " (:msg response) ", body: " (apply str (:body-seq response))))
     (log (str "Writing cache: " new-cache))
     (write-cache new-cache)
