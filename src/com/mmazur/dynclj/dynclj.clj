@@ -3,6 +3,7 @@
   (:use [clojure.contrib.base64 :only [encode-str]]
         [clojure.contrib.duck-streams :only [file-str writer read-lines append-spit]]
         [clojure.contrib.str-utils2 :only [split join]]
+        [clojure.contrib.command-line :only [with-command-line]]
         [clojure.http.client :only [request]])
   (:import (java.util Date Calendar)))
 
@@ -112,24 +113,31 @@
     (:code response)))
 
 (defn -main [& args]
-  (let [config-map (get-config (get-config-filename))
-        current-state {:ip (get-current-ip-address-from-dyndns)
-                       :date *now*}
-        hosts-to-update (determine-hosts-to-update config-map current-state)]
-    (if (> (count hosts-to-update) 0)
-      (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
-        (perform-update hosts-to-update current-state config-map))
-      (log "No update needed"))))
+  (with-command-line args
+    "Update DynDNS host information"
+    [[ip "force update to use this IP"]]
+    (let [config-map (get-config (get-config-filename))
+          current-state {:ip (or ip (get-current-ip-address-from-dyndns))
+                         :date *now*}
+          hosts-to-update (determine-hosts-to-update config-map current-state)]
+      (if (> (count hosts-to-update) 0)
+        (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
+          (perform-update hosts-to-update current-state config-map))
+        (log "No update needed")))))
 
-;(def username "test")
-;(def password "test")
-;(def user-pass-base64-encoded (encode-str (str username ":" password)))
-;(def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
-;(def additional-headers {"Authorization" (str "Basic " user-pass-base64-encoded)})
-;
-;(def response (request update-url "GET" additional-headers))
-;(keys response)
-;(:body-seq response)
-;(:code response)
-;(first (:date (:headers response)))
-;(println response)
+(comment
+
+  (def username "test")
+  (def password "test")
+  (def user-pass-base64-encoded (encode-str (str username ":" password)))
+  (def update-url "https://members.dyndns.org/nic/update?hostname=test.dyndns.org&myip=110.24.1.55")
+  (def additional-headers {"Authorization" (str "Basic " user-pass-base64-encoded)})
+
+  (def response (request update-url "GET" additional-headers))
+  (keys response)
+  (:body-seq response)
+  (:code response)
+  (first (:date (:headers response)))
+  (println response)
+
+  )

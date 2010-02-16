@@ -1,5 +1,4 @@
 - add command-line options
- - --ip - to specify the "current" IP to use
  - --config - overrides the config file location
  - --cache-file - overrides the cache file location
  - --force to always update
