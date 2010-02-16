@@ -100,6 +100,13 @@
                             (if (update-needed? current-state cache-item)
                               host))))))))
 
+(defn response-successful? [response current-state]
+  "Inspect response to determine whether request succeeded"
+  (let [response-code (:code response)]
+    (if (= 200 (:code response))
+      (= (apply str (:body-seq response)) (str "good " (current-state :ip)))
+      false)))
+
 (defn perform-update [records current-state config-map]
   (let [username (:username config-map)
         password (:password config-map)
@@ -107,13 +114,17 @@
         hosts (join "," records)
         update-url (str "https://members.dyndns.org/nic/update?hostname=" hosts "&myip=" (:ip current-state))
         _ (log (str "Update URL: " update-url))
-        response (request update-url "GET" headers)
-        update-date (first (:date (:headers response)))
-        new-cache (reduce #(conj %1 (assoc current-state :host %2 :date update-date)) [] records)]
-    (log (str "Update response code: " (:code response) ", msg: " (:msg response) ", body: " (apply str (:body-seq response))))
-    (log (str "Writing cache: " new-cache))
-    (write-cache new-cache)
-    (:code response)))
+        response (request update-url "GET" headers)]
+    (if (response-successful? response current-state)
+      (let [update-date (first (:date (:headers response)))
+            new-cache (reduce #(conj %1 (assoc current-state :host %2 :date update-date)) [] records)]
+        (log (str "Update response code: " (:code response) ", msg: " (:msg response) ", body: " (apply str (:body-seq response))))
+        (log (str "Writing cache: " new-cache))
+        (write-cache new-cache)
+        :success)
+      (do
+        (log (str "Update failed with return code: " (:code response) ", msg: " (:msg response) ", body: " (apply str (:body-seq response))))
+        :fail))))
 
 (defn -main [& args]
   (with-command-line args
