@@ -24,12 +24,15 @@
 
 (def *now* (serialize-date (Date.)))
 
+(def *verbose?* false)
+
 (defn log [msg]
+  (when *verbose?* (println msg))
   (append-spit *log-file-name* (str *now* " " msg "\n")))
 
 (defn abort [msg]
-  (log msg)
-  (println msg)
+  (binding [*verbose?* true]
+    (log msg))
   (System/exit 1))
 
 ;;; DynDNS logic
@@ -115,15 +118,21 @@
 (defn -main [& args]
   (with-command-line args
     "Update DynDNS host information"
-    [[ip "force update to use this IP"]]
-    (let [config-map (get-config (get-config-filename))
-          current-state {:ip (or ip (get-current-ip-address-from-dyndns))
-                         :date *now*}
-          hosts-to-update (determine-hosts-to-update config-map current-state)]
-      (if (> (count hosts-to-update) 0)
-        (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
-          (perform-update hosts-to-update current-state config-map))
-        (log "No update needed")))))
+    [[config-file c "use specified configuration file"]
+     [ip "force update to use this IP"]
+     [force? "force the update"]
+     [verbose? v? "verbose output"]]
+    (binding [*verbose?* verbose?]
+      (let [config-map (get-config (or config-file (get-config-filename)))
+            current-state {:ip (or ip (get-current-ip-address-from-dyndns))
+                           :date *now*}
+            hosts-to-update (if force?
+                              (split (config-map :hosts) #",")
+                              (determine-hosts-to-update config-map current-state))]
+        (if (> (count hosts-to-update) 0)
+          (do (log (str "Updating hosts: " (apply str (interpose \, hosts-to-update))))
+            (perform-update hosts-to-update current-state config-map))
+          (log "No update needed"))))))
 
 (comment
 
