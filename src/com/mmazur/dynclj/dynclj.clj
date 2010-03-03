@@ -5,10 +5,19 @@
         [clojure.contrib.str-utils2 :only [split join]]
         [clojure.contrib.command-line :only [with-command-line]]
         [clojure.http.client :only [request]])
-  (:import (java.util Date Calendar)))
+  (:import (java.util Date Calendar)
+           (java.io File)))
 
 (def *cache-file-name* (str (System/getenv "HOME") "/.dynclj/dynclj.cache"))
 (def *log-file-name* (str (System/getenv "HOME") "/.dynclj/dynclj.log"))
+
+(defn create-log-file-if-not-exist []
+  (let [f (File. *log-file-name*)]
+    (when (not (.exists f))
+      (when (or (not (.exists (.getParentFile f)))
+                (not (.isDirectory (.getParentFile f))))
+        (.mkdir (.getParentFile f)))
+      (.createNewFile f))))
 
 ; from http://www.dyndns.com/services/dns/dyndns/readme.html#abuse
 (def *days-between-nochg-updates* 28)
@@ -87,7 +96,11 @@
             (for [line (remove comment-or-blank? (read-lines file))]
               (split line #"=")))
     (catch java.io.FileNotFoundException _
-      (abort (str "ERROR: Config file " file " not found")))))
+      (abort (str "ERROR: Config file " file " not found\n\n"
+                  "Example file:\n\n"
+                  "username=user\n"
+                  "password=pass\n"
+                  "hosts=host1.dyndns.org,host2.dyndns.org")))))
 
 ;;; Perform the update
 (defn determine-hosts-to-update [config-map current-state]
@@ -134,6 +147,7 @@
      [force? "force the update"]
      [verbose? v? "verbose output"]]
     (binding [*verbose?* verbose?]
+      (create-log-file-if-not-exist)
       (let [config-map (get-config (or config-file (get-config-filename)))
             current-state {:ip (or ip (get-current-ip-address-from-dyndns))
                            :date *now*}
